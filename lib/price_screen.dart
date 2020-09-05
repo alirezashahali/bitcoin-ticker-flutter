@@ -1,4 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:bitcoin_ticker/utils/CardRenderer.dart';
+import 'package:bitcoin_ticker/utils/Konst.dart';
+import 'package:bitcoin_ticker/utils/httpCall.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class PriceScreen extends StatefulWidget {
   @override
@@ -6,46 +13,68 @@ class PriceScreen extends StatefulWidget {
 }
 
 class _PriceScreenState extends State<PriceScreen> {
+  dynamic _data;
+  dynamic _baseCurrency = 'IRR';
+  dynamic _listCurrency = ['USD', 'EUR', 'GBP'];
+  dynamic _height;
+
+  final spinkit = SpinKitRotatingCircle(
+    color: Colors.lightBlue,
+    size: 50.0,
+  );
+
+  void getData() async {
+    var _http = HttpCall(kUrl);
+    var _holder = await _http.getCurrency();
+    setState(() {
+      _data = jsonDecode(_holder.body);
+    });
+  }
+
+  void timer() {
+    Timer(Duration(minutes: 30), () {
+      getData();
+    });
+  }
+
+  void _changeBaseCurrency(String nVal) {
+    setState(() {
+      _baseCurrency = nVal;
+    });
+  }
+
+  void _deleteListCurrency(String cName) {
+    // print(cName);
+    setState(() {
+      _listCurrency = _listCurrency.where((f) => f != cName).toList();
+    });
+  }
+
+  void _addListCurrency(String cName) {
+    print(cName);
+    if (_listCurrency.indexOf(cName) < 0) {
+      setState(() {
+        _listCurrency.add(cName);
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getData();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('🤑 Coin Ticker'),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = ? USD',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Container(
-            height: 150.0,
-            alignment: Alignment.center,
-            padding: EdgeInsets.only(bottom: 30.0),
-            color: Colors.lightBlue,
-            child: null,
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _height = MediaQuery.of(context).size.height;
+    });
+    if (_data == null) {
+      return spinkit;
+    }
+    return cardRenderer(_data['rates'], _baseCurrency, _listCurrency, _height,
+        _changeBaseCurrency, _deleteListCurrency, _addListCurrency);
   }
 }
